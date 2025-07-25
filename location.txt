@@ -1,0 +1,4 @@
+Medford 30
+Kentucky 50
+Maryland 60
+
