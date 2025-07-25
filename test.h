@@ -13,9 +13,14 @@ class Parcel {
 public:
     unordered_map<string, string> weight_map;
     unordered_map<string, string> location_map;
+    unordered_map<string,string> priority_map;
+
+    string sender_name;
+    string tracking_id;
 
     ifstream weight_fin;
     ifstream location_fin;
+    ifstream priority_fin;
 
     ofstream fout;
 
@@ -27,6 +32,12 @@ public:
 
     string ask_package_weight;
     string ask_location;
+
+    string priority_number;
+    string priority_order;
+    string priority_price;
+
+    priority_queue<pair<string,int> >order_priority;
 
     int total_price;
 
@@ -53,7 +64,7 @@ public:
 
     void Sender();
     void Receiver(); // Fixed typo
-    void Admin();
+    void Admin(priority_queue<pair<string,int> >&orderprint);
 };
 
 class Menu {
@@ -62,3 +73,13 @@ public:
 };
 
 #endif
+
+
+/*
+ Problem:
+
+ 1) Right now it directly prints from he admin, because in parcel, admin is being triggered
+ 2)It needs to store continously and print
+ 3) Only the admin should be able to pop the orders.
+
+ */
