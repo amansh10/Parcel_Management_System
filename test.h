@@ -6,6 +6,8 @@
 #include <unordered_map>
 #include <fstream>
 #include <sqlite3.h>
+#include<vector>
+#include<string>
 
 using namespace std;
 
@@ -13,7 +15,7 @@ class Parcel {
 public:
     unordered_map<string, string> weight_map;
     unordered_map<string, string> location_map;
-    unordered_map<string,string> priority_map;
+    unordered_map<string, string> priority_map;
 
     string sender_name;
     string tracking_id;
@@ -37,8 +39,6 @@ public:
     string priority_order;
     string priority_price;
 
-    priority_queue<pair<string,int> >order_priority;
-
     int total_price;
 
     void package_details();
@@ -49,22 +49,36 @@ public:
     ifstream fin;
     ofstream fout;
 
+    Parcel P;
+
     unordered_map<string, string> order_details;
+
+    priority_queue<pair<int, string> > order_priority;
+    vector<pair<int, string> >order_vector;
 
     string sender_name;
     string sender_address;
     string sender_phone_number;
-    string total_price; // Added for Total_Price column
+    string total_price;
 
-    string receiver_name; // Fixed typo
-    string receiver_phone_number; // Fixed typo
-    string receiver_address; // Fixed typo
+    string receiver_name;
+    string receiver_phone_number;
+    string receiver_address;
 
     string tracking_id;
 
     void Sender();
-    void Receiver(); // Fixed typo
-    void Admin(priority_queue<pair<string,int> >&orderprint);
+    void Receiver();
+
+    // Admin Credentials;
+
+    void Admin();
+
+    int pin=1234; // put in the private class
+    int ask_pin;
+    int admin_options;
+    char admin_sub_options;
+
 };
 
 class Menu {
@@ -75,11 +89,5 @@ public:
 #endif
 
 
-/*
- Problem:
+// Fill the vector using the database.
 
- 1) Right now it directly prints from he admin, because in parcel, admin is being triggered
- 2)It needs to store continously and print
- 3) Only the admin should be able to pop the orders.
-
- */
