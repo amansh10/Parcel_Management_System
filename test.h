@@ -9,6 +9,8 @@
 #include <vector>
 #include <string>
 #include <limits>  // for numeric_limits
+#include<sstream>
+#include<map>
 
 using namespace std;
 
@@ -30,6 +32,12 @@ struct ReceiverRecord {
     string tracking_id;
 };
 
+struct LogRecord{
+    string user_type;
+    string action;
+    string time;
+};
+
 // --------------- DB Manager ---------------
 class DatabaseManager {
 public:
@@ -42,12 +50,20 @@ public:
     bool createTable(const string& table_name);        // single-table create
     bool createAllTables();                            // convenience
 
-    bool insertSender(const SenderRecord& rec);
-    bool insertReceiver(const ReceiverRecord& rec);
+    bool insertSender(const SenderRecord& srec);
+    bool insertReceiver(const ReceiverRecord& rrec);
+    bool insertLog(const LogRecord& lrec);
 
     bool deleteSenderByTrackingId(const string& tid);
     bool selectSenderByAddress(const string& addr);
     bool selectReceiverByAddress(const string& addr);
+    string readFile(const string &filename);
+    void replaceplaceholders(string& str, const map<string, string>& replacements);
+    void sendEmail(const SenderRecord& srec, const std::string& recipient_email);
+
+
+
+
 
     bool loadOrderDetails(unordered_map<string, string> &order_details,
                           vector<pair<int, string> >& order_vector);

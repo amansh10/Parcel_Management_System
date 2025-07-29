@@ -1,5 +1,13 @@
 #include "test.h"
 
+string Date(){
+
+    time_t timestamp;
+    time(&timestamp);
+
+    return string(ctime(&timestamp));
+};
+
 
 void Parcel::package_details() {
     weight_fin.open("weight.txt");
@@ -77,7 +85,7 @@ void User::Sender() {
     if (!dbm.open()) return;
     dbm.createAllTables();
 
-    SenderRecord rec{
+    SenderRecord srec {
             sender_name,
             sender_address,
             sender_phone_number,
@@ -86,12 +94,23 @@ void User::Sender() {
             P.priority_number
     };
 
-    if (!dbm.insertSender(rec)) {
+    LogRecord lrec {
+       "Sender",
+       "Order Placed",
+       Date()
+    };
+
+    if (!dbm.insertSender(srec) ) {
         cerr << "Failed to insert sender.\n";
+    }
+
+    if(!dbm.insertLog(lrec)) {
+        cerr << "Failed to insert log.\n";
     }
 
     order_details[sender_name] = tracking_id;
 
+    dbm.sendEmail(srec,"cyco.dud1@gmail.com");
     dbm.close();
 }
 
@@ -138,8 +157,18 @@ void User::Receiver() {
             tracking_id
     };
 
+    LogRecord lrec{
+        "Receiver",
+        "Order Recieved",
+        Date()
+};
+
     if (!dbm.insertReceiver(rec)) {
         cerr << "Failed to insert receiver.\n";
+    }
+
+    if(!dbm.insertLog(lrec)) {
+        cerr << "Failed to insert log.\n";
     }
 
     // Delete from sender table (delivered)
@@ -186,6 +215,16 @@ void User::Admin() {
                 order_priority.pop();
                 cout << "TrackingID: " << top.second << " | Priority: " << top.first << '\n';
             }
+
+            LogRecord lrec{
+                    "Admin",
+                    "Order Checkd Priority",
+                    Date()
+            };
+
+            if(!dbm.insertLog(lrec)) {
+                cerr << "Failed to insert log.\n";
+            }
             break;
         }
         case 2: {
@@ -198,8 +237,26 @@ void User::Admin() {
 
             if (admin_sub_options == 's') {
                 dbm.selectSenderByAddress(location);
+                LogRecord lrec{
+                    "Admin",
+                    "Order Checked From Sender",
+                    Date()
+                };
+
+                if(!dbm.insertLog(lrec)) {
+                    cerr << "Failed to insert log.\n";
+                }
             } else if (admin_sub_options == 'r') {
                 dbm.selectReceiverByAddress(location);
+                LogRecord lrec{
+                        "Admin",
+                        "Order Checked",
+                        Date()
+                };
+
+                if(!dbm.insertLog(lrec)) {
+                    cerr << "Failed to insert log.\n";
+                }
             } else {
                 cout << "Invalid option. Please enter 's' or 'r'.\n";
             }
@@ -217,10 +274,16 @@ void User::Admin() {
                 }
             }
 
+
             // remove from DB
             if (!dbm.deleteSenderByTrackingId(tracking_id)) {
                 cerr << "Failed to delete from DB.\n";
             }
+            LogRecord lrec{
+                "Admin",
+                "Order Removed By Admin",
+                Date()
+            };
             break;
         }
         default:

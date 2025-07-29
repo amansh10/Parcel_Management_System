@@ -26,7 +26,6 @@ static int vector_callback(void *data, int argc, char **argv, char **) {
 }
 
 
-
 bool DatabaseManager::open(const string& path) {
     if (sqlite3_open(path.c_str(), &db) != SQLITE_OK) {
         cerr << "Cannot open " << path << ": " << sqlite3_errmsg(db) << endl;
@@ -44,7 +43,7 @@ void DatabaseManager::close() {
 }
 
 bool DatabaseManager::createAllTables() {
-    return createTable("admin_sender") && createTable("admin_receiver");
+    return createTable("admin_sender") && createTable("admin_receiver") && createTable("log_table");
 }
 
 bool DatabaseManager::createTable(const string &table_name) {
@@ -69,18 +68,37 @@ bool DatabaseManager::createTable(const string &table_name) {
             "Sender_Name TEXT NOT NULL, "
             "Tracking_ID TEXT NOT NULL);";
 
+    const char *sql_log=
+                        "CREATE TABLE IF NOT EXISTS log_table ("
+                        "ID INTEGER PRIMARY KEY AUTOINCREMENT, "
+                        "User TEXT NOT NULL,"
+                        "Action TEXT NOT NULL, "
+                        "Date TEXT NOT NULL);";
+
+
     const char* sql = nullptr;
+
+    sql=sql_log;
+
+    char* errMsg = nullptr;
+    int rc = sqlite3_exec(db, sql, nullptr, nullptr, &errMsg);
+    if (rc != SQLITE_OK) {
+        cerr << "SQL error (create table): " << errMsg << endl;
+        sqlite3_free(errMsg);
+        return false;
+    }
+
+
     if (table_name == "admin_sender") {
         sql = sql_sender;
     } else if (table_name == "admin_receiver") {
         sql = sql_receiver;
     } else {
-        cerr << "Unknown table name: " << table_name << endl;
         return false;
     }
 
-    char* errMsg = nullptr;
-    int rc = sqlite3_exec(db, sql, nullptr, nullptr, &errMsg);
+    rc = sqlite3_exec(db, sql, nullptr, nullptr, &errMsg);
+
     if (rc != SQLITE_OK) {
         cerr << "SQL error (create table): " << errMsg << endl;
         sqlite3_free(errMsg);
@@ -112,6 +130,35 @@ bool DatabaseManager::insertSender(const SenderRecord& rec) {
     sqlite3_bind_text(stmt, 6, rec.priority.c_str(), -1, SQLITE_TRANSIENT);
 
     int rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        cerr << "Insert sender failed: " << sqlite3_errmsg(db) << endl;
+        sqlite3_finalize(stmt);
+        return false;
+    }
+
+    sqlite3_finalize(stmt);
+    return true;
+}
+
+bool DatabaseManager::insertLog(const LogRecord& lrec) {
+    if(!db) return false;
+
+    const char* sql =
+            "INSERT INTO log_table "
+            "(User, Action, Date) "
+            "VALUES (?, ?, ?);";
+
+        sqlite3_stmt* stmt = nullptr;
+        if(sqlite3_prepare(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+            cerr << "Prepare failed: " << sqlite3_errmsg(db) << endl;
+            return false;
+        }
+
+    sqlite3_bind_text(stmt,1,lrec.user_type.c_str(),-1,SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt,2,lrec.action.c_str(),-1,SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt,3,lrec.time.c_str(),-1,SQLITE_TRANSIENT);
+
+        int rc=sqlite3_step(stmt);
     if (rc != SQLITE_DONE) {
         cerr << "Insert sender failed: " << sqlite3_errmsg(db) << endl;
         sqlite3_finalize(stmt);
@@ -175,6 +222,75 @@ bool DatabaseManager::deleteSenderByTrackingId(const string& tid) {
 
     sqlite3_finalize(stmt);
     return true;
+}
+
+string DatabaseManager::readFile(const string &filename) {
+    ifstream fin;
+    fin.open("package.json");
+    ostringstream ss;
+    ss<< fin.rdbuf();
+    return ss.str();
+};
+
+void DatabaseManager::replaceplaceholders(string& str, const map<string, string>& replacements){
+    for (const auto& pair : replacements) {
+        size_t pos;
+        while ((pos = str.find(pair.first)) != std::string::npos) {
+            str.replace(pos, pair.first.length(), pair.second);
+        }
+    }
+}
+
+void DatabaseManager::sendEmail(const SenderRecord& srec, const std::string& recipient_email) {
+
+    string payload = readFile("package.json");
+
+    map<string, string> replacements = {
+            {"[name]", srec.name},
+            {"[email]", recipient_email},
+            {"[tracking_id]", srec.tracking_id},
+            {"[total_price]", srec.total_price},
+            {"[priority]", srec.priority}
+    };
+
+    replaceplaceholders(payload, replacements);
+
+    std::string cmd = "curl --request POST "
+                      "--url https://api.sendgrid.com/v3/mail/send "
+                      "--header \"Authorization: Bearer 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\" "
+                      "--header \"Content-Type: application/json\" "
+                      "--data '" + payload + "'";
+
+    std::cout << "Sending email with command:\n" << cmd << std::endl;
+
+    system(cmd.c_str());
+
+   /* std::string content = "Hello " + srec.name +
+                          ",\\n\\nYour parcel with tracking ID " + srec.tracking_id +
+                          " has been processed.\\nTotal Price: $" + srec.total_price +
+                          "\\nPriority: " + srec.priority +
+                          "\\n\\nThank you for using our service!";
+
+    // Construct JSON payload with proper escaping
+    std::string jsonPayload = "{"
+                              "\\\"personalizations\\\": [{\\\"to\\\": [{\\\"email\\\": \\\"" + recipient_email + "\\\"}]}],"
+                                                                                                                  "\\\"from\\\": {\\\"email\\\": \\\"amanshrestha656@gmail.com\\\"},"
+                                                                                                                  "\\\"subject\\\": \\\"Parcel Notification\\\","
+                                                                                                                  "\\\"content\\\": [{\\\"type\\\": \\\"text/plain\\\", \\\"value\\\": \\\"" + content + "\\\"}]"
+                                                                                                                                                                                                         "}";
+
+    std::string cmd = "curl --request POST "
+                      "--url https://api.sendgrid.com/v3/mail/send "
+                      "--header \"Authorization: Bearer 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\" "
+                      "--header \"Content-Type: application/json\" "
+                      "--data \"" + jsonPayload + "\"";
+
+    // Debug print to check final curl command
+    std::cout << "Sending email with command:\n" << cmd << std::endl;
+
+    system(cmd.c_str());
+    */
+
 }
 
 bool DatabaseManager::selectSenderByAddress(const string& addr) {

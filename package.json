@@ -1,0 +1,1 @@
+{"personalizations": [{"to": [{"email": "[email]"}]}],"from": {"email": "amanshrestha656@gmail.com"},"subject": "Parcel Notification","content": [{"type": "text/plain", "value": "Hello [name],\n\nYour parcel with tracking ID [tracking_id] has been processed.\nTotal Price: $[total_price]\nPriority: [priority]\nThank you for using our service!\""}]}
