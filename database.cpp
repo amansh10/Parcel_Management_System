@@ -257,8 +257,8 @@ void DatabaseManager::sendEmail(const SenderRecord& srec, const std::string& rec
 
     std::string cmd = "curl --request POST "
                       "--url https://api.sendgrid.com/v3/mail/send "
-                      "--header \"Authorization: Bearer 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\" "
-                      "--header \"Content-Type: application/json\" "
+                      "--header \"Authorization: Bearer (API KEY)\" " //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
+                       "--header \"Content-Type: application/json\" "
                       "--data '" + payload + "'";
 
     std::cout << "Sending email with command:\n" << cmd << std::endl;
