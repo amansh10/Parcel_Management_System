@@ -257,7 +257,7 @@ void DatabaseManager::sendEmail(const SenderRecord& srec, const std::string& rec
 
     std::string cmd = "curl --request POST "
                       "--url https://api.sendgrid.com/v3/mail/send "
-                      "--header \"Authorization: Bearer (API KEY)\" " //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
+                      "--header \"Authorization: Bearer (API KEY)\" "
                        "--header \"Content-Type: application/json\" "
                       "--data '" + payload + "'";
 
@@ -265,31 +265,6 @@ void DatabaseManager::sendEmail(const SenderRecord& srec, const std::string& rec
 
     system(cmd.c_str());
 
-   /* std::string content = "Hello " + srec.name +
-                          ",\\n\\nYour parcel with tracking ID " + srec.tracking_id +
-                          " has been processed.\\nTotal Price: $" + srec.total_price +
-                          "\\nPriority: " + srec.priority +
-                          "\\n\\nThank you for using our service!";
-
-    // Construct JSON payload with proper escaping
-    std::string jsonPayload = "{"
-                              "\\\"personalizations\\\": [{\\\"to\\\": [{\\\"email\\\": \\\"" + recipient_email + "\\\"}]}],"
-                                                                                                                  "\\\"from\\\": {\\\"email\\\": \\\"amanshrestha656@gmail.com\\\"},"
-                                                                                                                  "\\\"subject\\\": \\\"Parcel Notification\\\","
-                                                                                                                  "\\\"content\\\": [{\\\"type\\\": \\\"text/plain\\\", \\\"value\\\": \\\"" + content + "\\\"}]"
-                                                                                                                                                                                                         "}";
-
-    std::string cmd = "curl --request POST "
-                      "--url https://api.sendgrid.com/v3/mail/send "
-                      "--header \"Authorization: Bearer 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\" "
-                      "--header \"Content-Type: application/json\" "
-                      "--data \"" + jsonPayload + "\"";
-
-    // Debug print to check final curl command
-    std::cout << "Sending email with command:\n" << cmd << std::endl;
-
-    system(cmd.c_str());
-    */
 
 }
 
